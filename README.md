@@ -16,7 +16,7 @@ allow your Mac to automatically connect to the same type of network at home.
 
 1. Clone the repository to your local machine.
     ```bash
-    git clone https://github.com/vborodulin/wifi-loc-control.git
+    git clone https://github.com/ctrlcmdshft/wifi-loc-control.git
     cd ./wifi-loc-control
     ```
 
@@ -102,12 +102,40 @@ Logs examples:
 [2023-11-26 13:44:49] current wifi_name 'My_Home_Wi-Fi_5GHz'
 [2023-11-26 13:44:49] network locations: Automatic Home
 [2023-11-26 13:44:49] current network location 'Automatic'
-[2023-11-26 13:44:49] reading alias config '/Users/vborodulin/.wifi-loc-control/alias.conf'
+[2023-11-26 13:44:49] reading alias config '/Users/ctrlcmdshft/.wifi-loc-control/alias.conf'
 [2023-11-26 13:44:49] for wifi name 'My_Home_Wi-Fi_5GHz' found alias 'Home'
 [2023-11-26 13:44:49] location switched to 'Home'
 [2023-11-26 13:44:49] finding script for location 'Home'
-[2023-11-26 13:44:49] running script '/Users/vborodulin/.wifi-loc-control/Home'
+[2023-11-26 13:44:49] running script '/Users/ctrlcmdshft/.wifi-loc-control/Home'
 ```
+
+## Uninstallation
+
+To remove WiFiLocControl from your system, you can use the included uninstall script:
+
+```bash
+./uninstall.sh
+```
+
+The uninstaller will:
+1. Unload the LaunchAgent to stop the service
+2. Remove all installed components (script, configuration, and LaunchAgent)
+3. Back up any custom scripts you've created
+4. Offer to delete log files
+
+If you prefer to uninstall manually, you can:
+
+1. Unload the LaunchAgent:
+   ```bash
+   launchctl unload ~/Library/LaunchAgents/WiFiLocControl.plist
+   ```
+
+2. Remove the installed files:
+   ```bash
+   sudo rm /usr/local/bin/wifi-loc-control.sh
+   rm -rf ~/.wifi-loc-control
+   rm ~/Library/LaunchAgents/WiFiLocControl.plist
+   ```
 
 ## Contributing
 

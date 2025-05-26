@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>application.com.wifi-loc-control</string>
+    <string>com.wifi-loc-control</string>
     <key>ProgramArguments</key>
     <array>
         <string>/usr/local/bin/wifi-loc-control.sh</string>
@@ -14,5 +14,11 @@
     </array>
     <key>RunAtLoad</key>
     <true/>
+    <key>KeepAlive</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>~/Library/Logs/WiFiLocControl.log</string>
+    <key>StandardErrorPath</key>
+    <string>~/Library/Logs/WiFiLocControl.log</string>
 </dict>
 </plist>

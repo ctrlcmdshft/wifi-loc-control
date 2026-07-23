@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+# Example Automatic/Public entry script.
+# Copy to ~/.wifi-loc-control/Automatic and edit the settings below.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
+
+WLC_LOG_PREFIX="Automatic"
+WLC_SERVICE="Wi-Fi"
+
+# Public/default networks should usually remove location-specific state.
+CLEAR_DNS=true
+DISABLE_PROXIES=true
+FLUSH_DNS_CACHE=true
+VOLUMES_TO_UNMOUNT=()
+APPS_TO_QUIT=()
+SHOW_NOTIFICATION=true
+
+wlc_log "Applying Automatic settings"
+
+if [ "$CLEAR_DNS" = true ]; then
+  wlc_clear_dns
+fi
+
+if [ "$DISABLE_PROXIES" = true ]; then
+  wlc_disable_proxies
+fi
+
+# Optional: unmount shares that only make sense at Home or Work.
+# Example:
+# VOLUMES_TO_UNMOUNT=("HomeNAS" "CompanyShare")
+for volume in "${VOLUMES_TO_UNMOUNT[@]}"; do
+  wlc_unmount_if_mounted "$volume"
+done
+
+# Optional: quit location-specific apps.
+# Example:
+# APPS_TO_QUIT=("Slack" "Microsoft Teams")
+wlc_quit_apps "${APPS_TO_QUIT[@]}"
+
+if [ "$FLUSH_DNS_CACHE" = true ]; then
+  wlc_flush_dns_cache
+fi
+
+if [ "$SHOW_NOTIFICATION" = true ]; then
+  wlc_notify "Automatic settings applied"
+fi
+
+wlc_log "Automatic settings complete"

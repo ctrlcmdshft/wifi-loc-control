@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARGET_DIR="${TARGET_DIR:-$HOME/.wifi-loc-control}"
+FORCE=false
+
+usage() {
+  cat <<'EOF'
+Usage:
+  scripts/install-examples          Install example scripts if missing.
+  scripts/install-examples --force  Overwrite existing example scripts.
+EOF
+}
+
+case "${1:-}" in
+  "")
+    ;;
+  --force)
+    FORCE=true
+    ;;
+  --help|-h)
+    usage
+    exit 0
+    ;;
+  *)
+    usage >&2
+    exit 2
+    ;;
+esac
+
+install_file() {
+  local source_file="$1"
+  local target_file="$2"
+  local mode="$3"
+
+  if [ -e "$target_file" ] && [ "$FORCE" != true ]; then
+    printf 'skip: %s already exists\n' "$target_file"
+    return 0
+  fi
+
+  cp "$source_file" "$target_file"
+  chmod "$mode" "$target_file"
+  printf 'installed: %s\n' "$target_file"
+}
+
+mkdir -p "$TARGET_DIR"
+
+install_file "$SCRIPT_DIR/common.sh" "$TARGET_DIR/common.sh" 0644
+install_file "$SCRIPT_DIR/Home.example" "$TARGET_DIR/Home" 0755
+install_file "$SCRIPT_DIR/Work.example" "$TARGET_DIR/Work" 0755
+install_file "$SCRIPT_DIR/Automatic.example" "$TARGET_DIR/Automatic" 0755
+
+printf '\nEdit scripts in %s before relying on them.\n' "$TARGET_DIR"

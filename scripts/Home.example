@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+# Example Home entry script.
+# Copy to ~/.wifi-loc-control/Home and edit the settings below.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
+
+WLC_LOG_PREFIX="Home"
+WLC_SERVICE="Wi-Fi"
+
+# Edit these values for your home network.
+HOME_DNS_SERVERS=("192.168.1.1")
+HOME_SMB_VOLUME=""
+HOME_SMB_URL=""
+HOME_APPS_TO_OPEN=()
+WORK_APPS_TO_QUIT=()
+SHOW_NOTIFICATION=true
+
+wlc_log "Applying Home settings"
+
+# Home should usually clear work/public-network state first.
+wlc_disable_proxies
+
+# Use home DNS. Leave HOME_DNS_SERVERS empty to skip DNS changes.
+wlc_set_dns "${HOME_DNS_SERVERS[@]}"
+
+# Optional: mount a NAS share.
+# Example:
+# HOME_SMB_VOLUME="HomeNAS"
+# HOME_SMB_URL="smb://home-nas.local/shared"
+wlc_mount_smb_if_missing "$HOME_SMB_VOLUME" "$HOME_SMB_URL"
+
+# Optional: open or quit apps.
+# Example:
+# HOME_APPS_TO_OPEN=("Messages" "Music")
+# WORK_APPS_TO_QUIT=("Slack" "Microsoft Teams")
+wlc_open_apps "${HOME_APPS_TO_OPEN[@]}"
+wlc_quit_apps "${WORK_APPS_TO_QUIT[@]}"
+
+if [ "$SHOW_NOTIFICATION" = true ]; then
+  wlc_notify "Home settings applied"
+fi
+
+wlc_log "Home settings complete"

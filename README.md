@@ -11,6 +11,8 @@ allow your Mac to automatically connect to the same type of network at home.
 - Automatically changes network locations based on current Wi-Fi name.
 - Supports alias configurations for multiple Wi-Fi names.
 - Executes location-specific scripts.
+- Includes `--preview` and `--doctor` modes for safer setup and troubleshooting.
+- Includes optional script templates for common per-location automations.
 
 ## Installation
 
@@ -33,13 +35,18 @@ allow your Mac to automatically connect to the same type of network at home.
   tail -f ~/Library/Logs/WiFiLocControl.log
   ```
 
+4. To verify the install:
+  ```bash
+  /usr/local/bin/wifi-loc-control.sh --doctor
+  ```
+
 5. To uninstall, run:
   ```bash
-  sudo rm /usr/local/bin/wifi-loc-control.sh
-  rm -rf ~/.wifi-loc-control
-  rm ~/Library/LaunchAgents/WiFiLocControl.plist
-  sudo rm /etc/sudoers.d/wifi-loc-control
-  launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/WiFiLocControl.plist
+  ./uninstall.sh
+  ```
+  To also remove aliases, scripts, and state:
+  ```bash
+  ./uninstall.sh --remove-config
   ```
 
 ## Usage
@@ -69,6 +76,32 @@ My_Home_Wi-Fi_2.4GHz=Work
 ```
 
 Where the keys are the wireless network names and the values are the desired location names.
+
+You can also use explicit `ssid:` entries, comments, and BSSID/router MAC
+entries. BSSID rules win over SSID rules, which helps when different places use
+the same Wi-Fi name:
+
+```text
+# SSID aliases
+ssid:CompanyWiFi=Work
+ssid:HomeWiFi=Home
+
+# More specific BSSID aliases
+bssid:aa:bb:cc:dd:ee:ff=Office
+bssid:11:22:33:44:55:66=Home
+```
+
+Before letting WiFiLocControl switch locations, you can preview the decision:
+
+```bash
+/usr/local/bin/wifi-loc-control.sh --preview
+```
+
+Validate aliases and location scripts:
+
+```bash
+/usr/local/bin/wifi-loc-control.sh --validate-config
+```
 
 ### Run Scripts on Wi-Fi Network Connection
 
@@ -109,12 +142,31 @@ chmod +x ~/.wifi-loc-control/My_Home_Wi-Fi_5GHz
 chmod +x ~/.wifi-loc-control/Automatic
 ```
 
+User-friendly examples are available in [`scripts/`](scripts/). They include
+editable `Home`, `Work`, and `Automatic` templates plus common helper functions
+for DNS, proxies, notifications, app launching, and network shares.
+
+```bash
+scripts/install-examples
+```
+
+Scripts are entry scripts. They run after entering a location, not when leaving
+the previous location. Each script should describe the final state you want for
+that location. For example, if `Work` enables a proxy, `Home` or `Automatic`
+should disable it.
+
 ## Troubleshooting
 
 Rich logs available at ~/Library/Logs/WiFiLocControl.log.
 
 ```bash
 tail -f ~/Library/Logs/WiFiLocControl.log
+```
+
+Run a full health check:
+
+```bash
+/usr/local/bin/wifi-loc-control.sh --doctor
 ```
 
 Logs examples:

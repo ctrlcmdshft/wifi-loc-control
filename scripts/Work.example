@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+# Example Work entry script.
+# Copy to ~/.wifi-loc-control/Work and edit the settings below.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
+
+WLC_LOG_PREFIX="Work"
+WLC_SERVICE="Wi-Fi"
+
+# Edit these values for your work network.
+WORK_DNS_SERVERS=("10.0.0.10" "10.0.0.11")
+ENABLE_WORK_PROXY=false
+WORK_PROXY_HOST=""
+WORK_PROXY_PORT=""
+WORK_SMB_VOLUME=""
+WORK_SMB_URL=""
+WORK_APPS_TO_OPEN=()
+SHOW_NOTIFICATION=true
+
+wlc_log "Applying Work settings"
+
+# Work DNS. Leave WORK_DNS_SERVERS empty to skip DNS changes.
+wlc_set_dns "${WORK_DNS_SERVERS[@]}"
+
+# Optional: enable a work proxy.
+# Example:
+# ENABLE_WORK_PROXY=true
+# WORK_PROXY_HOST="proxy.company.com"
+# WORK_PROXY_PORT="8080"
+if [ "$ENABLE_WORK_PROXY" = true ]; then
+  wlc_enable_http_proxy "$WORK_PROXY_HOST" "$WORK_PROXY_PORT"
+else
+  wlc_log "Work proxy disabled in settings; leaving proxy state unchanged"
+fi
+
+# Optional: mount a work file share.
+# Example:
+# WORK_SMB_VOLUME="CompanyShare"
+# WORK_SMB_URL="smb://files.company.com/shared"
+wlc_mount_smb_if_missing "$WORK_SMB_VOLUME" "$WORK_SMB_URL"
+
+# Optional: open work apps.
+# Example:
+# WORK_APPS_TO_OPEN=("Slack" "Microsoft Teams" "Calendar")
+wlc_open_apps "${WORK_APPS_TO_OPEN[@]}"
+
+if [ "$SHOW_NOTIFICATION" = true ]; then
+  wlc_notify "Work settings applied"
+fi
+
+wlc_log "Work settings complete"

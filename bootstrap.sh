@@ -4,6 +4,8 @@ set -euo pipefail
 
 SCRIPT_NAME=wifi-loc-control.sh
 INSTALL_PATH=/usr/local/bin/wifi-loc-control.sh
+RUNNER_NAME=wifi-loc-control-run
+RUNNER_PATH=/usr/local/bin/wifi-loc-control-run
 LAUNCH_AGENTS_DIR="${HOME}/Library/LaunchAgents"
 PLIST_NAME=WiFiLocControl.plist
 PLIST_PATH="${LAUNCH_AGENTS_DIR}/${PLIST_NAME}"
@@ -18,11 +20,11 @@ usage() {
 Usage: ./bootstrap.sh [--uninstall]
 
 Install WiFiLocControl for the current user. Run it again to update the
-script, the LaunchAgent, and the ipconfig permission.
+script, the LaunchAgent, and the root permissions.
 
   ./bootstrap.sh --uninstall
 
-Removes the LaunchAgent, the installed script, and the ipconfig permission.
+Removes the LaunchAgent, the installed scripts, and the root permissions.
 Aliases and scripts in ~/.wifi-loc-control are left in place.
 EOF
 }
@@ -58,7 +60,9 @@ install_sudoers() {
   cat > "$tmp" <<EOF
 # Lets WiFiLocControl read the current Wi-Fi name on macOS versions that redact it.
 # Verbose mode is enabled only for that read, then turned off again.
-${user} ALL=(root) NOPASSWD: ${IPCONFIG_BIN} setverbose 0, ${IPCONFIG_BIN} setverbose 1
+# The runner executes one location script from that user's ~/.wifi-loc-control.
+# socketfilterfw is the firewall command those scripts usually need.
+${user} ALL=(root) NOPASSWD: ${IPCONFIG_BIN} setverbose 0, ${IPCONFIG_BIN} setverbose 1, /usr/libexec/ApplicationFirewall/socketfilterfw *, ${RUNNER_PATH} *
 EOF
 
   if ! sudo visudo -cf "$tmp"; then
@@ -101,6 +105,7 @@ install_tool() {
     sudo mkdir -p /usr/local/bin
   fi
   sudo install -m 755 "${src}/${SCRIPT_NAME}" "$INSTALL_PATH"
+  sudo install -m 755 "${src}/${RUNNER_NAME}" "$RUNNER_PATH"
 
   mkdir -p "$CONFIG_DIR"
   chmod 700 "$CONFIG_DIR"
@@ -108,7 +113,7 @@ install_tool() {
   cp -f "${src}/${PLIST_NAME}" "$PLIST_PATH"
 
   if ! install_sudoers; then
-    echo "Warning: passwordless ipconfig was not configured. Wi-Fi names may stay redacted on newer macOS versions." >&2
+    echo "Warning: passwordless root commands were not configured. Wi-Fi names may stay redacted, and location scripts may not be able to change firewall settings." >&2
   fi
 
   bootout_agent
@@ -125,6 +130,7 @@ uninstall_tool() {
   bootout_agent
   rm -f "$PLIST_PATH"
   sudo rm -f "$INSTALL_PATH"
+  sudo rm -f "$RUNNER_PATH"
   sudo rm -f "$SUDOERS_PATH"
 
   echo "WiFiLocControl is uninstalled."

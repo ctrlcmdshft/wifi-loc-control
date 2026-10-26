@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# Run one WiFiLocControl location script as root.
+# sudoers allows this program only. It will not run an arbitrary command.
+
+set -euo pipefail
+
+refuse() {
+  printf '%s\n' "$*" >&2
+  exit 126
+}
+
+location_name_is_safe() {
+  case "$1" in
+    ""|.|..|.*|/*|*/*|*$'\n'*|*$'\r'*)
+      return 1
+      ;;
+  esac
+  return 0
+}
+
+if [[ "$#" -ne 1 ]] || ! location_name_is_safe "$1"; then
+  refuse "refusing location name '${1:-}'"
+fi
+
+location=$1
+
+if [[ "$(id -u)" -ne 0 || -z "${SUDO_USER:-}" || -z "${SUDO_UID:-}" ]]; then
+  refuse "wifi-loc-control-run must be started with sudo"
+fi
+
+case "$SUDO_USER" in
+  ""|*[!A-Za-z0-9._-]*)
+    refuse "refusing user name '${SUDO_USER}'"
+    ;;
+esac
+
+home_line=$(dscl . -read "/Users/${SUDO_USER}" NFSHomeDirectory 2>/dev/null || true)
+home=${home_line#NFSHomeDirectory: }
+home=${home%"${home##*[![:space:]]}"}
+if [[ -z "$home" || "$home" == "$home_line" || ! -d "$home" ]]; then
+  refuse "could not find the home directory for '${SUDO_USER}'"
+fi
+
+config_dir="${home}/.wifi-loc-control"
+script="${config_dir}/${location}"
+
+if [[ -L "$script" || ! -f "$script" ]]; then
+  refuse "refusing '${script}'"
+fi
+
+owner=$(stat -f '%u' "$script" 2>/dev/null || stat -c '%u' "$script")
+mode=$(stat -f '%OLp' "$script" 2>/dev/null || stat -c '%a' "$script")
+if [[ "$owner" != "$SUDO_UID" ]]; then
+  refuse "refusing '${script}' because it is not owned by ${SUDO_USER}"
+fi
+if [[ $((8#$mode & 022)) -ne 0 ]]; then
+  refuse "refusing '${script}' because it is writable by the group or by others"
+fi
+
+rm -f "${config_dir}/.script-started"
+: > "${config_dir}/.script-started"
+
+shim=$(mktemp -d "${TMPDIR:-/tmp}/wifi-loc-control-sudo.XXXXXX")
+cleanup() {
+  # Reached from the EXIT trap after the location script returns.
+  # shellcheck disable=SC2317
+  rm -rf "$shim"
+}
+trap cleanup EXIT
+
+cat > "${shim}/sudo" <<'EOF'
+#!/bin/bash
+# The location script is already running as root. A leading sudo would ask
+# for a password again, which the agent cannot type.
+while [[ "${1:-}" == -* ]]; do
+  case "$1" in
+    --)
+      shift
+      break
+      ;;
+    -n|--non-interactive|-E|--preserve-env)
+      shift
+      ;;
+    *)
+      exec /usr/bin/sudo "$@"
+      ;;
+  esac
+done
+if [[ "$#" -eq 0 ]]; then
+  printf '%s\n' "sudo: a command is required" >&2
+  exit 126
+fi
+exec "$@"
+EOF
+chmod 755 "${shim}/sudo"
+
+export HOME="$home"
+export USER="$SUDO_USER"
+export LOGNAME="$SUDO_USER"
+export PATH="${shim}:${PATH}"
+cd "$home" || refuse "could not enter '${home}'"
+
+status=0
+if [[ -x "$script" ]]; then
+  "$script" || status=$?
+else
+  /bin/bash "$script" || status=$?
+fi
+exit "$status"

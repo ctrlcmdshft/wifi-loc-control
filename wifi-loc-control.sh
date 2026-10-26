@@ -9,6 +9,7 @@ CONFIG_PATH="${CONFIG_DIR}/config"
 SETTLE_SECONDS=3
 LOG_MAX_BYTES=1048576
 IPCONFIG_BIN=/usr/sbin/ipconfig
+RUNNER_PATH=/usr/local/bin/wifi-loc-control-run
 
 IPCONFIG_VERBOSE_RAISED=0
 LOCK_DIR=""
@@ -610,8 +611,28 @@ run_location_script() {
     fi
   fi
 
-  log "running script '${script_file}'"
-  "$script_file" || status=$?
+  # Unknown networks select Automatic, and that script is where the Home or
+  # Work changes get undone. Run it as root so firewall commands work.
+  # The runner accepts only this location name, and sudo inside the script
+  # does not ask for a password. If the runner is not permitted yet, run the
+  # script as the user so an old install still does something.
+  local stamp="${CONFIG_DIR}/.script-started"
+  local ran_as_root=0
+  rm -f "$stamp"
+  if [[ -x "$RUNNER_PATH" ]]; then
+    log "running script '${script_file}' as root"
+    sudo -n "$RUNNER_PATH" "$location" || status=$?
+    if [[ -f "$stamp" ]]; then
+      ran_as_root=1
+    fi
+  fi
+  rm -f "$stamp"
+  if [[ "$ran_as_root" -eq 0 ]]; then
+    log "running script '${script_file}' as the current user"
+    log "re-run ./bootstrap.sh so location scripts can run privileged commands without a password"
+    status=0
+    "$script_file" || status=$?
+  fi
   log "script exited with status ${status}"
 }
 

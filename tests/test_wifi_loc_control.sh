@@ -191,7 +191,33 @@ assert_eq "script path" "${TMP_DIR}/Home Office" "$(script_path_for_location "Ho
 assert_status "script path rejects traversal" 1 script_path_for_location "../passwd" "$TMP_DIR"
 assert_status "script path rejects a slash" 1 script_path_for_location "Home/Office" "$TMP_DIR"
 
+run_helper() {
+  HELPER_STATUS=0
+  HELPER_OUT=$(bash "${ROOT}/wifi-loc-control-run" "$@" 2>&1) || HELPER_STATUS=$?
+}
+run_helper "../passwd"
+assert_eq "runner rejects traversal" "126" "$HELPER_STATUS"
+case "$HELPER_OUT" in
+  *refusing*) passed=$((passed + 1)) ;;
+  *)
+    failures=$((failures + 1))
+    printf 'FAIL runner traversal message: %s\n' "$HELPER_OUT" >&2
+    ;;
+esac
+run_helper "Home/Office"
+assert_eq "runner rejects a slash" "126" "$HELPER_STATUS"
+run_helper "Automatic"
+assert_eq "runner refuses to start without sudo" "126" "$HELPER_STATUS"
+case "$HELPER_OUT" in
+  *sudo*) passed=$((passed + 1)) ;;
+  *)
+    failures=$((failures + 1))
+    printf 'FAIL runner sudo message: %s\n' "$HELPER_OUT" >&2
+    ;;
+esac
+
 bash -n "${ROOT}/wifi-loc-control.sh"
+bash -n "${ROOT}/wifi-loc-control-run"
 bash -n "${ROOT}/bootstrap.sh"
 bash -n "${ROOT}/tests/test_wifi_loc_control.sh"
 passed=$((passed + 1))
@@ -226,7 +252,7 @@ case "$linux_text" in
 esac
 
 if command -v shellcheck >/dev/null 2>&1; then
-  shellcheck "${ROOT}/wifi-loc-control.sh" "${ROOT}/bootstrap.sh" "${ROOT}/tests/test_wifi_loc_control.sh"
+  shellcheck "${ROOT}/wifi-loc-control.sh" "${ROOT}/wifi-loc-control-run" "${ROOT}/bootstrap.sh" "${ROOT}/tests/test_wifi_loc_control.sh"
   passed=$((passed + 1))
 fi
 

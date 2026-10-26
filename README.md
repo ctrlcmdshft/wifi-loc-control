@@ -8,7 +8,7 @@ The script runs as a LaunchAgent for the user who installed it. It runs at login
 
 - Selects a network location from the current Wi-Fi name.
 - Maps several Wi-Fi networks, or their private Wi-Fi addresses, onto one location.
-- Runs a script after a location change.
+- Runs a script after a location change, as root, so firewall commands do not ask for a password.
 - Leaves the current location alone when Wi-Fi is off or the network name cannot be read.
 
 ## Installation
@@ -29,14 +29,13 @@ The script runs as a LaunchAgent for the user who installed it. It runs at login
 
    This copies `wifi-loc-control.sh` to `/usr/local/bin`, loads `~/Library/LaunchAgents/WiFiLocControl.plist`, and makes `~/.wifi-loc-control` private to your user. Running it again updates an existing install.
 
-   On macOS 15.6 and later, the network name is often reported as `<redacted>` unless `ipconfig` verbose mode is turned on. The installer writes `/etc/sudoers.d/wifi-loc-control` so the agent can run only these two commands without a password:
+   The installer writes `/etc/sudoers.d/wifi-loc-control` so the agent can run three things without a password:
 
-   ```text
-   /usr/sbin/ipconfig setverbose 1
-   /usr/sbin/ipconfig setverbose 0
-   ```
+   - turn `ipconfig` verbose mode on and off, which is how macOS 15.6 and later reveal the Wi-Fi name
+   - run one location script from `~/.wifi-loc-control` as root
+   - run `/usr/libexec/ApplicationFirewall/socketfilterfw`
 
-   The agent turns verbose mode on for the read and turns it off again afterward. It does not grant any other root access.
+   Verbose mode is turned off again after the Wi-Fi name is read. Re-run `./bootstrap.sh` after updating so this permission is installed. An existing `alias.conf` is left alone.
 
 3. Watch the log.
 
@@ -62,7 +61,7 @@ The script runs as a LaunchAgent for the user who installed it. It runs at login
    ```bash
    launchctl bootout "gui/$(id -u)/application.com.wifi-loc-control"
    rm -f ~/Library/LaunchAgents/WiFiLocControl.plist
-   sudo rm -f /usr/local/bin/wifi-loc-control.sh
+   sudo rm -f /usr/local/bin/wifi-loc-control.sh /usr/local/bin/wifi-loc-control-run
    sudo rm -f /etc/sudoers.d/wifi-loc-control
    ```
 
@@ -70,7 +69,13 @@ The script runs as a LaunchAgent for the user who installed it. It runs at login
 
 Name a network location after the Wi-Fi network when one location is enough. A network named `My_Home_Wi-Fi_5GHz` selects a location named `My_Home_Wi-Fi_5GHz`.
 
-A network with no matching location selects the default location, which is `Automatic` unless you change it. The agent does that only when it could read a real network name. A redacted or empty name is not treated as an unknown café, because switching on a guess would drop a known network onto the default location.
+A network with no matching alias, and no location of that same name, selects `Automatic`. You do not list those networks in `alias.conf`, and a line such as `Default=Automatic` does not set the fallback. It only matches a Wi-Fi network whose name is `Default`. To use a fallback other than `Automatic`, put this in `~/.wifi-loc-control/config`:
+
+```text
+default_location=Automatic
+```
+
+The agent selects that fallback only when it could read a real network name. A redacted or empty name is left alone, because switching on a guess would drop a known network onto the fallback.
 
 Wi-Fi that is powered off or not associated does not change the location.
 
@@ -136,17 +141,9 @@ exec 2>&1
 sudo -n /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on
 ```
 
-Save that as `~/.wifi-loc-control/Home` when the selected location is `Home`. A reset script for the default location can live at `~/.wifi-loc-control/Automatic` and turn the same setting off.
+Save that as `~/.wifi-loc-control/Home` when the selected location is `Home`. The reset for every other network belongs in `~/.wifi-loc-control/Automatic` and turns the same setting off. That file runs when you join a network that is not in `alias.conf`.
 
-The agent runs the script as your user. A command that needs root will fail until you allow that exact command. Keep the rule narrow and check it with `visudo`:
-
-```bash
-sudo visudo -f /etc/sudoers.d/wifi-loc-control-firewall
-```
-
-```text
-your-user-name ALL=(root) NOPASSWD: /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on, /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-```
+After `./bootstrap.sh`, the agent runs these scripts as root. A `sudo` in the script does not ask for your password. The permission covers the script runner and `socketfilterfw`, not every command on the system.
 
 Make the script executable. The agent will also mark it executable if it can.
 

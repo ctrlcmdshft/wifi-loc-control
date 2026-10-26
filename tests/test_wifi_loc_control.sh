@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Checks the parsing and location-selection helpers without macOS.
+# Checks parsing and location selection. Safe on a Mac: it does not install
+# the agent, and it does not read the live Wi-Fi network.
 set -euo pipefail
 
 ROOT=$(cd "$(dirname -- "$0")/.." && pwd)
@@ -129,9 +130,6 @@ EOF
 )
 assert_eq "service order wifi device" "en1" "$(printf '%s\n' "$SERVICE_ORDER" | wifi_interface_from_service_order)"
 
-get_wifi_name "en0" || true
-assert_eq "missing wifi tools leave the name empty" "" "$SSID_VALUE"
-
 SCSELECT_TEXT=$(cat <<'EOF'
 Defined sets include: (* == current set)
  * BDF51A74-6547-4747-BD21-30C51DA26CB1 (Automatic)
@@ -207,8 +205,15 @@ case "$help_text" in
     ;;
 esac
 
+# A fake uname keeps this from installing when the tests run on a Mac.
+mkdir -p "${TMP_DIR}/bin"
+cat > "${TMP_DIR}/bin/uname" <<'EOF'
+#!/bin/bash
+echo Linux
+EOF
+chmod +x "${TMP_DIR}/bin/uname"
 set +e
-linux_text=$(bash "${ROOT}/bootstrap.sh" 2>&1)
+linux_text=$(PATH="${TMP_DIR}/bin:${PATH}" bash "${ROOT}/bootstrap.sh" 2>&1)
 linux_status=$?
 set -e
 assert_eq "bootstrap refuses a non-macOS install" "1" "$linux_status"

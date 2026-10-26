@@ -192,7 +192,7 @@ The LaunchAgent does not start more than once every 10 seconds. A second change 
 
 ## Contributing
 
-Contributions are welcome. Shell scripts in this repository are checked with [shellcheck](https://www.shellcheck.net/). The helper tests do not need macOS:
+Contributions are welcome. Shell scripts in this repository are checked with [shellcheck](https://www.shellcheck.net/). The helper tests do not install the agent or read the live Wi-Fi network:
 
 ```bash
 bash tests/test_wifi_loc_control.sh

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0c0d0b" />
+  <title>Lumen remote</title>
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="remote">
+  <header class="remote-bar">
+    <div>
+      <p class="eyebrow">Lumen</p>
+      <h1>Remote</h1>
+    </div>
+    <p id="conn" class="conn" data-state="connecting">Connecting</p>
+  </header>
+
+  <section class="now-card" aria-label="Now playing">
+    <p class="eyebrow" id="now-kicker">Queue</p>
+    <h2 id="now-title">Nothing queued</h2>
+    <input id="scrub" type="range" min="0" max="0" step="0.1" value="0" aria-label="Position" />
+    <div class="time-row">
+      <span id="time-now">0:00</span>
+      <span id="time-end">0:00</span>
+    </div>
+    <div class="transport-row">
+      <button type="button" id="back" aria-label="Back 10 seconds">−10</button>
+      <button type="button" id="prev" aria-label="Previous">Prev</button>
+      <button type="button" id="play" class="play" aria-label="Play">
+        <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+      </button>
+      <button type="button" id="next" aria-label="Next">Next</button>
+      <button type="button" id="forward" aria-label="Forward 10 seconds">+10</button>
+    </div>
+    <div class="toggles">
+      <button type="button" id="shuffle" aria-pressed="false">Shuffle</button>
+      <button type="button" id="loop">Loop off</button>
+      <button type="button" id="rate">1×</button>
+    </div>
+    <label class="vol wide">Volume
+      <input id="volume" type="range" min="0" max="1" step="0.01" value="0.85" />
+    </label>
+    <p id="gate-hint" class="hint" hidden>Confirm “Show video” on the car screen.</p>
+  </section>
+
+  <section>
+    <h2>Add</h2>
+    <form id="add-form">
+      <label for="link">Link</label>
+      <div class="row">
+        <input id="link" type="text" inputmode="url" placeholder="YouTube or a direct mp4 link" autocomplete="off" />
+        <button type="submit">Add</button>
+      </div>
+      <p id="add-error" class="error" hidden></p>
+    </form>
+    <div class="row wrap">
+      <label class="file-btn">Video or audio
+        <input id="file" type="file" accept="video/*,audio/*,.vtt,text/vtt" hidden />
+      </label>
+      <label class="file-btn">Photos
+        <input id="photos" type="file" accept="image/*" multiple hidden />
+      </label>
+      <p id="upload-status" class="hint" hidden></p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Car screen</h2>
+    <div class="modes" id="modes" role="group" aria-label="Screen mode">
+      <button type="button" data-mode="drive">Drive</button>
+      <button type="button" data-mode="mirror">Mirror</button>
+      <button type="button" data-mode="theater">Theater</button>
+      <button type="button" data-mode="ambient">Ambient</button>
+      <button type="button" data-mode="frame">Frame</button>
+      <button type="button" data-mode="trip">Trip</button>
+    </div>
+    <label class="checkline">
+      <input id="audio-drive" type="checkbox" />
+      Keep sound while driving. The picture stays hidden.
+    </label>
+    <button type="button" id="relock" class="text-button">Hide the picture and return to Drive</button>
+  </section>
+
+  <section id="share">
+    <h2>Phone screen</h2>
+    <p id="share-help" class="hint"></p>
+    <label>Quality
+      <select id="share-quality">
+        <option value="light">Light, 960px, 6 fps</option>
+        <option value="balanced" selected>Balanced, 1280px, 10 fps</option>
+        <option value="smooth">Smooth, 1280px, 15 fps</option>
+      </select>
+    </label>
+    <div class="row">
+      <button type="button" id="share-start">Share screen</button>
+      <button type="button" id="share-stop" hidden>Stop sharing</button>
+    </div>
+    <a id="https-link" hidden>Open the secure remote</a>
+    <video id="share-preview" muted playsinline hidden></video>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Queue</h2>
+      <button type="button" id="clear" class="text-button" hidden>Clear</button>
+    </div>
+    <ol id="queue" class="remote-queue"></ol>
+  </section>
+
+  <section>
+    <h2>Playlists</h2>
+    <form id="save-pl" class="row">
+      <input id="pl-name" maxlength="80" placeholder="Name this queue" autocomplete="off" />
+      <button type="submit">Save</button>
+    </form>
+    <ul id="playlists"></ul>
+    <div class="row wrap">
+      <a class="file-btn" href="/api/export" download="lumen-backup.json">Download backup</a>
+      <label class="file-btn">Restore backup
+        <input id="import" type="file" accept="application/json" hidden />
+      </label>
+    </div>
+  </section>
+
+  <section>
+    <h2>Trip</h2>
+    <label>Destination
+      <input id="destination" maxlength="200" placeholder="Where to?" autocomplete="off" />
+    </label>
+    <label>Notes
+      <textarea id="notes" maxlength="5000" rows="4" placeholder="Gate code, snacks, the turn after the bridge."></textarea>
+    </label>
+    <div class="row">
+      <button type="button" id="trip-start">Start timer</button>
+      <button type="button" id="trip-reset">Reset</button>
+      <span id="trip-elapsed">0:00</span>
+    </div>
+    <form id="check-form" class="row">
+      <input id="check-text" maxlength="200" placeholder="Add a checklist item" autocomplete="off" />
+      <button type="submit">Add</button>
+    </form>
+    <button type="button" id="road-kit" class="text-button">Add a road kit</button>
+    <ul id="checks"></ul>
+    <div class="prompt">
+      <p class="eyebrow">Prompt</p>
+      <p id="prompt-text"></p>
+      <button type="button" id="next-prompt" class="text-button">Another</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Frame</h2>
+      <label class="inline">Seconds
+        <input id="frame-seconds" type="number" min="3" max="120" value="8" />
+      </label>
+    </div>
+    <ul id="photo-list"></ul>
+  </section>
+
+  <script type="module" src="/remote.js"></script>
+</body>
+</html>

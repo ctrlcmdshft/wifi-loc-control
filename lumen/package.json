@@ -1,0 +1,17 @@
+{
+  "name": "lumen",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cabin display for a Tesla browser, with a phone remote, theater queue, and screen share.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  }
+}

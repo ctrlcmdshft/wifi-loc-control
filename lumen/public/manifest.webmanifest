@@ -1,0 +1,9 @@
+{
+  "name": "Lumen Remote",
+  "short_name": "Lumen",
+  "start_url": "/remote",
+  "display": "standalone",
+  "background_color": "#0c0d0b",
+  "theme_color": "#0c0d0b",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

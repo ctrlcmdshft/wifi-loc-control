@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <title>Lumen</title>
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body class="display" data-mode="drive" data-show-video="0" data-has-media="0">
+  <h1 class="sr-only">Lumen</h1>
+  <div id="dimmer"></div>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">Lumen</span>
+      </div>
+      <nav class="modes" aria-label="Screen mode">
+        <button type="button" data-mode="drive" aria-pressed="true">Drive</button>
+        <button type="button" data-mode="mirror">Mirror</button>
+        <button type="button" data-mode="theater">Theater</button>
+        <button type="button" data-mode="ambient">Ambient</button>
+        <button type="button" data-mode="frame">Frame</button>
+        <button type="button" data-mode="trip">Trip</button>
+      </nav>
+      <div class="top-actions">
+        <label class="dim-label">Dim
+          <input id="dim" type="range" min="0.55" max="1" step="0.01" value="1" />
+        </label>
+        <button type="button" id="pair-btn" aria-expanded="false">Remote</button>
+        <button type="button" id="full">Full screen</button>
+        <span id="conn" class="conn" data-state="connecting">Connecting</span>
+      </div>
+    </header>
+    <div id="pair-pop" class="pair-pop" hidden>
+      <img id="qr" alt="QR code for the phone remote" width="168" height="168" />
+      <p id="pair-url" class="url"></p>
+      <p class="hint">Phone and car on the same Wi-Fi. In the car, turn on “Remain connected in Drive.”</p>
+    </div>
+    <div class="workspace">
+      <div class="stage">
+        <div id="player-slot">
+          <video id="player" playsinline preload="auto"></video>
+          <div id="yt"></div>
+        </div>
+
+        <section id="panel-drive" class="panel drive-panel">
+          <p class="day" data-clock="date"></p>
+          <div class="clock" aria-hidden="true">
+            <span data-clock="hm">–:–</span>
+            <span class="clock-side">
+              <span data-clock="sec">00</span>
+              <span data-clock="period">PM</span>
+            </span>
+          </div>
+          <label class="dest-label">
+            <span>Destination</span>
+            <input id="destination" maxlength="200" placeholder="Where to?" autocomplete="off" />
+          </label>
+          <p class="trip-line">Trip <span id="trip-elapsed">0:00</span></p>
+          <p id="drive-now" class="drive-now" hidden></p>
+        </section>
+
+        <section id="panel-mirror" class="panel mirror-panel">
+          <img id="mirror" alt="" />
+          <div class="mirror-note">
+            <p id="mirror-status">Waiting for a phone screen</p>
+            <p id="mirror-help">Navigation can stay on this screen. Video is for a passenger, or while the car is parked. Pair Bluetooth if you want the phone’s audio.</p>
+          </div>
+        </section>
+
+        <section id="panel-theater" class="panel">
+          <div id="gate" class="overlay" hidden>
+            <div class="card">
+              <p class="eyebrow">Theater</p>
+              <h2>Show video on this screen?</h2>
+              <p>For a passenger, or while the car is parked. The person driving watches the road.</p>
+              <div class="row">
+                <button type="button" id="unlock" class="primary">Show video</button>
+                <button type="button" id="dismiss-gate">Stay on Drive</button>
+              </div>
+            </div>
+          </div>
+          <div id="theater-empty" class="overlay" hidden>
+            <div class="card">
+              <p class="eyebrow">Queue</p>
+              <h2>Nothing ready to play.</h2>
+              <p>Add a video from the phone. Playback stays here if the phone locks.</p>
+              <img id="qr-empty" alt="" width="148" height="148" />
+              <p id="empty-url" class="url"></p>
+            </div>
+          </div>
+          <p id="media-error" class="toast" hidden></p>
+          <p id="passenger-note" class="passenger-note" hidden>Passenger screen</p>
+        </section>
+
+        <section id="panel-ambient" class="panel ambient-panel">
+          <div class="ambient-bg" aria-hidden="true"></div>
+          <div class="ambient-copy">
+            <p class="day" data-clock="date"></p>
+            <div class="clock" aria-hidden="true"><span data-clock="hm">–:–</span></div>
+            <p id="ambient-title">The cabin is quiet.</p>
+          </div>
+        </section>
+
+        <section id="panel-frame" class="panel frame-panel">
+          <img id="frame-a" alt="" />
+          <img id="frame-b" alt="" />
+          <p id="frame-caption"></p>
+          <div id="frame-empty" class="overlay">
+            <div class="card">
+              <p class="eyebrow">Frame</p>
+              <h2>No photos yet.</h2>
+              <p>Add some from the remote and they cycle here.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="panel-trip" class="panel trip-panel">
+          <div class="trip-grid">
+            <div>
+              <p class="eyebrow">Destination</p>
+              <input id="trip-destination" maxlength="200" placeholder="Where to?" autocomplete="off" />
+              <p class="trip-line">On the road <span id="trip-elapsed-2">0:00</span></p>
+              <div class="row">
+                <button type="button" id="trip-start">Start timer</button>
+                <button type="button" id="trip-reset">Reset</button>
+              </div>
+              <label class="notes-label">Notes
+                <textarea id="notes" maxlength="5000" rows="5" placeholder="Gate code, snacks, the turn after the bridge."></textarea>
+              </label>
+            </div>
+            <div>
+              <p class="eyebrow">Checklist</p>
+              <ul id="checks"></ul>
+              <form id="check-form" class="row">
+                <input id="check-text" maxlength="200" placeholder="Add an item" autocomplete="off" />
+                <button type="submit">Add</button>
+              </form>
+              <button type="button" id="road-kit" class="text-button">Add a road kit</button>
+            </div>
+          </div>
+          <div class="prompt">
+            <p class="eyebrow">Prompt</p>
+            <p id="prompt-text"></p>
+            <button type="button" id="next-prompt" class="text-button">Another</button>
+          </div>
+        </section>
+      </div>
+      <aside class="rail" aria-label="Up next">
+        <div class="rail-head">
+          <h2>Up next</h2>
+          <button type="button" id="hide-picture" class="text-button">Hide picture</button>
+        </div>
+        <ol id="queue"></ol>
+      </aside>
+    </div>
+    <footer class="transport">
+      <div class="transport-buttons">
+        <button type="button" id="prev" aria-label="Previous">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h2v12H6zm14 0v12L9 12z"/></svg>
+        </button>
+        <button type="button" id="play" class="play" aria-label="Play">
+          <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+        </button>
+        <button type="button" id="next" aria-label="Next">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6h2v12h-2zM4 6v12l11-6z"/></svg>
+        </button>
+      </div>
+      <div class="transport-main">
+        <div class="title-row">
+          <p id="now-title">Nothing queued</p>
+          <p id="now-time">0:00</p>
+        </div>
+        <input id="scrub" type="range" min="0" max="0" step="0.1" value="0" aria-label="Position" />
+      </div>
+      <div class="transport-tools">
+        <button type="button" id="loop">Loop</button>
+        <button type="button" id="shuffle" aria-pressed="false">Shuffle</button>
+        <button type="button" id="rate">1×</button>
+        <button type="button" id="captions" hidden>CC</button>
+        <label class="vol">Vol
+          <input id="volume" type="range" min="0" max="1" step="0.01" value="0.85" aria-label="Volume" />
+        </label>
+      </div>
+    </footer>
+  </div>
+  <button type="button" id="sound-unlock" class="sound-unlock" hidden>Tap to play sound on this screen</button>
+  <script type="module" src="/display.js"></script>
+</body>
+</html>
